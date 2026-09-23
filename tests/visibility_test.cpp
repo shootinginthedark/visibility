@@ -133,6 +133,39 @@ TEST_CASE("Calculate visibility polygon with a polyline as an obstacle", "[visib
     REQUIRE(approx_equal(poly[5], { -50, 50 }));
 }
 
+TEST_CASE("Calculate visibility polygon through a shared endpoint at large coordinates", "[visibility]")
+{
+    const vector_type observer{ 4096, 5119.16650390625f };
+    const vector_type shared_endpoint{ 2304, 3872 };
+    const std::vector<segment_type> segments{
+        { { 0, 0 }, { 8192, 0 } },
+        { { 8192, 0 }, { 8192, 8192 } },
+        { { 8192, 8192 }, { 0, 8192 } },
+        { { 0, 8192 }, { 0, 0 } },
+        { shared_endpoint, { 3072, 3872 } },
+        { { 2272, 3840 }, shared_endpoint },
+    };
+
+    for (bool reverse_endpoints : { false, true })
+    {
+        auto obstacles = segments;
+        if (reverse_endpoints)
+        {
+            for (auto& segment : obstacles)
+                std::swap(segment.a, segment.b);
+        }
+
+        const auto poly = geometry::visibility_polygon(observer, obstacles.begin(), obstacles.end());
+        REQUIRE(poly.size() == 8);
+        REQUIRE(poly[5] == shared_endpoint);
+        for (const auto& point : poly)
+        {
+            REQUIRE(std::isfinite(point.x));
+            REQUIRE(std::isfinite(point.y));
+        }
+    }
+}
+
 TEST_CASE("Calculate visibility polygon with a convex polygon as an obstacle", "[visibility]")
 {
     using namespace geometry;

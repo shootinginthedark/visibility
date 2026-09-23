@@ -234,12 +234,16 @@ namespace geometry
             {
                 // Nearest line segment has changed
                 // Compute the intersection point with this segment
-                vec2 intersection;
-                ray<Vector> ray{ point, event.point() - point };
+                vec2 intersection = event.point();
                 auto nearest_segment = *state.begin();
-                auto intersects = ray.intersects(nearest_segment, intersection);
-                assert(intersects && 
-                    "Ray intersects line segment L iff L is in the state");
+                // Shared endpoints are already exact intersections.
+                if (intersection != nearest_segment.a && intersection != nearest_segment.b)
+                {
+                    ray<Vector> ray{ point, event.point() - point };
+                    auto intersects = ray.intersects(nearest_segment, intersection);
+                    assert(intersects &&
+                        "Ray intersects line segment L iff L is in the state");
+                }
 
                 if (event.type == event_type::start_vertex)
                 {
