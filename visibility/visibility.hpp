@@ -151,14 +151,19 @@ namespace geometry
      * @param point - position of the observer
      * @param begin iterator of the list of line segments (obstacles)
      * @param end iterator of the list of line segments (obstacles)
-     * @return vector of vertices of the visibility polygon
+     * @param failed optional output set to true if a required intersection fails
+     * @return vector of vertices of the visibility polygon, or empty on failure
      */
     template<typename Vector, typename InputIterator>
     std::vector<Vector> visibility_polygon(
         Vector point, 
         InputIterator begin,
-        InputIterator end)
+        InputIterator end,
+        bool *failed = nullptr)
     {
+        if (failed)
+            *failed = false;
+
         using segment_type = line_segment<Vector>;
         using event_type = visibility_event<Vector>;
         using segment_comparer_type = line_segment_dist_comparer<Vector>;
@@ -241,8 +246,12 @@ namespace geometry
                 {
                     ray<Vector> ray{ point, event.point() - point };
                     auto intersects = ray.intersects(nearest_segment, intersection);
-                    assert(intersects &&
-                        "Ray intersects line segment L iff L is in the state");
+                    if (!intersects)
+                    {
+                        if (failed)
+                            *failed = true;
+                        return {};
+                    }
                 }
 
                 if (event.type == event_type::start_vertex)
